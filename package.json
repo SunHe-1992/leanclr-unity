@@ -1,0 +1,24 @@
+{
+  "name": "com.code-philosophy.leanclr",
+  "version": "0.1.0-alpha",
+  "displayName": "LeanCLR",
+  "description": "Unity plugin that replaces IL2CPP with LeanCLR when building for WebGL and mini-games, delivering smaller package size and lower memory footprint.",
+  "category": "Scripting",
+  "unity": "2019.1",
+  "documentationUrl": "https://www.leanclr.cn/#/",
+  "changelogUrl": "https://www.leanclr.cn/#/other/changelog",
+  "licensesUrl": "https://github.com/focus-creative-games/leanclr4unity/blob/main/LICENSE",
+  "keywords": [
+    "LeanCLR",
+    "HybridCLR",
+    "focus-creative-games",
+    "code-philosophy",
+    "WebGL",
+    "MiniGame"
+  ],
+  "author": {
+    "name": "Code Philosophy",
+    "email": "leanclr@code-philosophy.com",
+    "url": "https://code-philosophy.com"
+  }
+}
