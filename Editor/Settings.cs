@@ -63,7 +63,7 @@ namespace LeanCLR
             }
         }
 
-        public static string InstallRootDir => $"Library/LeanCLR";
+        public static string InstallRootDir => Path.GetFullPath($"Library/LeanCLR");
 
         public static string GetPreservedLinkXmlPath()
         {
@@ -94,13 +94,15 @@ namespace LeanCLR
         {
             get
             {
-#if UNITY_2020_1_OR_NEWER
+#if UNITY_2021_1_OR_NEWER
             return LocalIl2CppDeployPath;
+#elif UNITY_2020_1_OR_NEWER
+            return $"{LocalIl2CppDeployPath}/netcoreapp3.1";
 #else
 #if UNITY_EDITOR_WIN
-            return $"{LocalIl2CppDeployDir}/net471";
+            return $"{LocalIl2CppDeployPath}/net471";
 #else
-                return $"{LocalIl2CppDeployDir}/il2cppcore";
+            return $"{LocalIl2CppDeployPath}/il2cppcore";
 #endif
 #endif
             }
@@ -124,7 +126,7 @@ namespace LeanCLR
             }
         }
 
-        public static string LocalLeanAotDir => $"{LocalIl2CppDeployPath}/leanaot";
+        public static string LocalLeanAotDir => $"{LocalIl2CppToolPath}/leanaot";
 
         private static Settings LoadOrCreate()
         {

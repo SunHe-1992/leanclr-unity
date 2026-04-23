@@ -114,12 +114,21 @@ RtResultVoid Class::init_corlib_classes(metadata::RtModuleDef* corlib)
 
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_assembly, get_class_must_exist(corlib, "System.Reflection.RuntimeAssembly"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_module, get_class_must_exist(corlib, "System.Reflection.RuntimeModule"));
+#if UNITY_VERSION >= 20210000
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_field, get_class_must_exist(corlib, "System.Reflection.RuntimeFieldInfo"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_method, get_class_must_exist(corlib, "System.Reflection.RuntimeMethodInfo"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_constructor, get_class_must_exist(corlib, "System.Reflection.RuntimeConstructorInfo"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_property, get_class_must_exist(corlib, "System.Reflection.RuntimePropertyInfo"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_event, get_class_must_exist(corlib, "System.Reflection.RuntimeEventInfo"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_parameter, get_class_must_exist(corlib, "System.Reflection.RuntimeParameterInfo"));
+#else
+    UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_field, get_class_must_exist(corlib, "System.Reflection.MonoField"));
+    UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_method, get_class_must_exist(corlib, "System.Reflection.MonoMethod"));
+    UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_constructor, get_class_must_exist(corlib, "System.Reflection.MonoCMethod"));
+    UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_property, get_class_must_exist(corlib, "System.Reflection.MonoProperty"));
+    UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_event, get_class_must_exist(corlib, "System.Reflection.MonoEvent"));
+    UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_parameter, get_class_must_exist(corlib, "System.Reflection.MonoParameterInfo"));
+#endif
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_memberinfo, get_class_must_exist(corlib, "System.Reflection.MemberInfo"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_methodbody, get_class_must_exist(corlib, "System.Reflection.MethodBody"));
     UNWRAP_OR_RET_ERR_ON_FAIL(t.cls_reflection_exceptionhandlingclause, get_class_must_exist(corlib, "System.Reflection.ExceptionHandlingClause"));
@@ -1220,8 +1229,7 @@ RtResultVoid Class::setup_field_layout(metadata::RtClass* klass)
     metadata::SizeAndAlignment instanceSizeAndAlignment;
     if (is_explicit_layout(klass))
     {
-        UNWRAP_OR_RET_ERR_ON_FAIL(instanceSizeAndAlignment,
-                                  metadata::Layout::compute_explicit_layout(mod, instanceFields, static_cast<uint8_t>(packingSize)));
+        UNWRAP_OR_RET_ERR_ON_FAIL(instanceSizeAndAlignment, metadata::Layout::compute_explicit_layout(mod, instanceFields, static_cast<uint8_t>(packingSize)));
     }
     else
     {
@@ -1237,9 +1245,8 @@ RtResultVoid Class::setup_field_layout(metadata::RtClass* klass)
             parentSize = 0;
             parentAlignment = 1;
         }
-        UNWRAP_OR_RET_ERR_ON_FAIL(instanceSizeAndAlignment,
-                                  metadata::Layout::compute_layout(instanceFields, parentSize, static_cast<uint8_t>(parentAlignment),
-                                                                   static_cast<uint8_t>(packingSize)));
+        UNWRAP_OR_RET_ERR_ON_FAIL(instanceSizeAndAlignment, metadata::Layout::compute_layout(instanceFields, parentSize, static_cast<uint8_t>(parentAlignment),
+                                                                                             static_cast<uint8_t>(packingSize)));
     }
     klass->instance_size_without_header = std::max(instanceSizeAndAlignment.size, classSize);
     if (Class::is_value_type(klass))

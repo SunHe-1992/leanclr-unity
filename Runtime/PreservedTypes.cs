@@ -105,7 +105,7 @@ public class PreservedTypes
 
     // Misc attributes/types
     public System.Runtime.InteropServices.MarshalAsAttribute MarshalAs;
-    public System.Runtime.CompilerServices.IsByRefLikeAttribute ByRefLike;
+    //public System.Runtime.CompilerServices.IsByRefLikeAttribute ByRefLike;
 
     // Globalization/internal framework types (some are internal, keep object refs)
     public object CultureData;
