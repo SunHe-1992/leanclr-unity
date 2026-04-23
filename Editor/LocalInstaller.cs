@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEditor;
@@ -128,16 +129,11 @@ namespace LeanCLR
             {
                 return 0L;
             }
-            long maxTicks = 0L;
-            foreach (string file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
-            {
-                long ticks = File.GetLastWriteTimeUtc(file).Ticks;
-                if (ticks > maxTicks)
-                {
-                    maxTicks = ticks;
-                }
-            }
-            return maxTicks;
+            return Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                .Where(f => !f.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                .Select(f => File.GetLastWriteTimeUtc(f).Ticks)
+                .DefaultIfEmpty(0L)
+                .Max();
         }
 
         private static void WriteInstalledPackageFingerprint()
