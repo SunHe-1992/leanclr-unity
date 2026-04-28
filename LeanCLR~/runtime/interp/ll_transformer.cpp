@@ -425,6 +425,13 @@ RtResult<bool> Transformer::transform_special_call_methods(GeneralInst* ll_inst,
             ll_inst->set_opcode(OpCodeEnum::Nop);
         }
     }
+    else if (klass == corlib_types.cls_array)
+    {
+        if (std::strcmp(method_name, "UnsafeMov") == 0)
+        {
+            ll_inst->set_opcode(OpCodeEnum::Nop);
+        }
+    }
     else if (klass == corlib_types.cls_intptr)
     {
         if (std::strcmp(method_name, STR_CTOR) == 0)
@@ -523,6 +530,13 @@ RtResult<bool> Transformer::transform_special_call_methods(GeneralInst* ll_inst,
             ll_inst->set_opcode(utils::Platform::select_arch(OpCodeEnum::LdIndI4, OpCodeEnum::LdIndI8));
             ll_inst->update_var_src(arg_this);
             ll_inst->update_var_dst(dst);
+        }
+    }
+    else if (std::strcmp(klass_name, "JitHelpers") == 0)
+    {
+        if (std::strcmp(method_name, "UnsafeCast") == 0 || std::strcmp(method_name, "UnsafeEnumCast") == 0 || std::strcmp(method_name, "UnsafeEnumCastLong"))
+        {
+            ll_inst->set_opcode(OpCodeEnum::Nop);
         }
     }
 
@@ -1976,9 +1990,13 @@ RtResultVoid Transformer::transform_instructions()
                 break;
             }
             case hl::OpCodeEnum::Calli:
+            {
                 ll_inst->set_opcode(OpCodeEnum::CalliInterp);
-                setup_inst_method(ll_inst, hl_inst);
+                setup_inst_resolved_data(ll_inst, hl_inst->get_method_sig());
+                // ll_inst->set_frame_base(hl_inst->get_frame_base());
+                //  method_idx stores in arg3, it has been setup on start.
                 break;
+            }
             case hl::OpCodeEnum::NewObj:
             {
                 const metadata::RtMethodInfo* method = hl_inst->get_method();

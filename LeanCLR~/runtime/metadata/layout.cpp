@@ -135,7 +135,7 @@ RtResult<SizeAndAlignment> Layout::compute_explicit_layout(RtModuleDef* mod, uti
         auto field_offset_opt = mod->get_field_offset(field->token);
         if (!field_offset_opt.has_value())
         {
-            RET_ERR(RtErr::BadImageFormat);
+            RET_ASSERT_ERR(RtErr::BadImageFormat);
         }
 
         uint32_t offset = field_offset_opt.value();
@@ -144,6 +144,7 @@ RtResult<SizeAndAlignment> Layout::compute_explicit_layout(RtModuleDef* mod, uti
         max_size = std::max(max_size, offset + field_info.size);
         max_alignment = std::max(max_alignment, effective_alignment);
     }
+    max_size = static_cast<uint32_t>(MemOp::align_up(max_size, max_alignment));
 
     SizeAndAlignment result = {max_size, max_alignment};
     RET_OK(result);
