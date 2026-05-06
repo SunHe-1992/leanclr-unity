@@ -102,10 +102,20 @@ namespace LeanCLR.BuildProcessors
 
         static string StripUnityDefineTokens(string inner)
         {
+            if (string.IsNullOrWhiteSpace(inner))
+            {
+                return string.Empty;
+            }
+
             string s = inner;
-            s = Regex.Replace(s, @"[\s]+[-]D\s*UNITY_VERSION\s*=\s*\d+", " ", RegexOptions.IgnoreCase);
-            s = Regex.Replace(s, @"[\s]+[-]D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", RegexOptions.IgnoreCase);
-            return s;
+            const RegexOptions opt = RegexOptions.IgnoreCase;
+            // Require start-of-string or whitespace before -D so we strip the first token
+            // (e.g. inner is exactly "-DUNITY_VERSION=60000400", not only after a space).
+            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*UNITY_VERSION\s*=\s*\d+", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*UNITY_VERSION\s*=\s*\d+", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", opt);
+            return s.Trim();
         }
 
         static string CollapseDuplicateWhitespace(string s)
