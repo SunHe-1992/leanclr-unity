@@ -45,7 +45,19 @@ In Unity Package Manager, click `Add package from git URL...`, then use either o
 
 ### Settings
 
-- Open the settings page from the `LeanCLR/Settings` menu. Currently, the plugin can only be enabled or disabled.
+Open the project settings page via **`LeanCLR/Settings...`** (or **Edit > Project Settings > LeanCLR**). Settings are stored in **`ProjectSettings/LeanCLR.asset`** and are saved automatically when you leave the settings UI.
+
+#### Main toggle
+
+- **`enable`**: Turns LeanCLR integration on or off. When off, builds do not use this package’s IL2CPP / LeanCLR pipeline.
+
+#### Lean AOT (`leanAOTSettings`)
+
+Options for **Lean AOT (leanaot)** during packaging. If you leave the nested object unset, built-in defaults apply (for example `aotPercent` defaults to 100, layout validation off, no rule file).
+
+- **`aotPercent`**: AOT-related ratio (integer, default 100). It tunes how Lean AOT behaves during packaging.
+- **`layoutValidation`**: Enables layout-related checks to catch inconsistencies with native layouts earlier; turn on mainly for diagnostics or stricter validation workflows.
+- **`ruleFile`**: Optional path to an AOT rule file (for example XML) for finer control over what gets AOT-compiled; leave empty to skip an external rules file.
 
 ### Build
 

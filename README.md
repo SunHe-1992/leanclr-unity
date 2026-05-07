@@ -46,7 +46,19 @@ LeanCLR 是一个面向全平台的精练的 CLR（Common Language Runtime）实
 
 ### 设置
 
-- `LeanCLR/Settings`菜单打开设置页面，当前仅可以设置开启或者禁用本插件。
+通过菜单 **`LeanCLR/Settings...`**（或 **Edit > Project Settings > LeanCLR**）打开项目设置页。配置保存在 **`ProjectSettings/LeanCLR.asset`**，离开设置页时会自动保存。
+
+#### 主开关
+
+- **`enable`**：是否启用 LeanCLR。关闭后，打包时不会走本包集成的 IL2CPP / LeanCLR 流程。
+
+#### Lean AOT（`leanAOTSettings`）
+
+打包阶段 **Lean AOT（leanaot）** 相关选项。若未展开配置，则使用内置默认值（例如 `aotPercent` 默认为 100，布局校验关闭，规则文件为空）。
+
+- **`aotPercent`**：AOT 相关比例参数（整数，默认 100），用于调节打包时 Lean AOT 的生成策略。
+- **`layoutValidation`**：是否开启类型布局等相关校验，便于在开发期尽早发现与原生布局不一致的问题；一般仅在需要排查或严格校验时开启。
+- **`ruleFile`**：可选的 AOT 规则文件路径（如 XML），用于按规则精细控制哪些代码走 AOT 等；不填则表示不使用外部规则文件。
 
 ### 构建
 

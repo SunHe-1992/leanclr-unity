@@ -34,18 +34,12 @@ namespace LeanCLR
             if (s_provider == null)
             {
                 s_provider = new SettingsProvider();
-                using (var so = new SerializedObject(Settings.Instance))
-                {
-                    s_provider.keywords = GetSearchKeywordsFromSerializedObject(so);
-                }
             }
             return s_provider;
         }
 
 
         private SerializedObject _serializedObject;
-        private SerializedProperty _enable;
-
         public SettingsProvider() : base("Project/LeanCLR", SettingsScope.Project)
         {
         }
@@ -53,6 +47,10 @@ namespace LeanCLR
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
             InitGUI();
+            using (var so = new SerializedObject(Settings.Instance))
+            {
+                keywords = GetSearchKeywordsFromSerializedObject(so);
+            }
         }
 
         public override void OnDeactivate()
@@ -66,7 +64,6 @@ namespace LeanCLR
             var setting = Settings.Instance;
             _serializedObject?.Dispose();
             _serializedObject = new SerializedObject(setting);
-            _enable = _serializedObject.FindProperty("enable");
         }
 
         public override void OnGUI(string searchContext)
@@ -78,7 +75,23 @@ namespace LeanCLR
             _serializedObject.Update();
             EditorGUI.BeginChangeCheck();
 
-            EditorGUILayout.PropertyField(_enable);
+            // Draw all serialized fields on Settings so new members do not require Provider changes.
+            using (var prop = _serializedObject.GetIterator())
+            {
+                if (prop.NextVisible(true))
+                {
+                    do
+                    {
+                        if (prop.name == "m_Script")
+                        {
+                            continue;
+                        }
+
+                        EditorGUILayout.PropertyField(prop, true);
+                    }
+                    while (prop.NextVisible(false));
+                }
+            }
 
             if (EditorGUI.EndChangeCheck())
             {

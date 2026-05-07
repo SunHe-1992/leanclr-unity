@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-﻿using System;
+using System;
+using System.Text;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -35,6 +36,7 @@ namespace LeanCLR.BuildProcessors
             if (!Settings.EnableForCurrentBuildTarget)
             {
                 Environment.SetEnvironmentVariable("UNITY_IL2CPP_PATH", "");
+                Environment.SetEnvironmentVariable("LEANAOT_EXTRA_ARGS", "");
                 return;
             }
             var installerController = new LocalInstaller();
@@ -45,6 +47,45 @@ namespace LeanCLR.BuildProcessors
             string runtimeDir = Settings.LocalIl2CppPath;
             Environment.SetEnvironmentVariable("UNITY_IL2CPP_PATH", runtimeDir);
             Debug.Log($"[SetupIl2CppEnv] set UNITY_IL2CPP_PATH='{runtimeDir}'");
+
+            string leanAotExtraArgs = BuildLeanAotExtraArgs();
+            Environment.SetEnvironmentVariable("LEANAOT_EXTRA_ARGS", leanAotExtraArgs);
+            Debug.Log($"[SetupIl2CppEnv] set LEANAOT_EXTRA_ARGS='{leanAotExtraArgs}'");
+        }
+
+        private static string BuildLeanAotExtraArgs()
+        {
+            LeanAOTSettings aot = Settings.Instance.leanAOTSettings;
+            if (aot == null)
+            {
+                aot = new LeanAOTSettings();
+            }
+
+            var sb = new StringBuilder();
+            sb.Append("--leanaot-aot-percent ");
+            sb.Append(aot.aotPercent);
+            if (aot.layoutValidation)
+            {
+                sb.Append(" --leanaot-enable-layout-validation");
+            }
+
+            if (!string.IsNullOrEmpty(aot.ruleFile))
+            {
+                string rulePath = aot.ruleFile.Trim();
+                sb.Append(" --leanaot-aot-rule-file ");
+                if (rulePath.IndexOf(' ') >= 0)
+                {
+                    sb.Append('"');
+                    sb.Append(rulePath.Replace("\"", "\\\""));
+                    sb.Append('"');
+                }
+                else
+                {
+                    sb.Append(rulePath);
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }

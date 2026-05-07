@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using UnityEditor;
@@ -26,12 +27,21 @@ using UnityEngine;
 
 namespace LeanCLR
 {
+    [Serializable]
+    public class LeanAOTSettings
+    {
+        public int aotPercent = 100;
+        public bool layoutValidation;
+        public string ruleFile;
+    }
 
     public class Settings : ScriptableObject
     {
         [Tooltip("Enable LeanCLR")]
         public bool enable = true;
 
+        [Tooltip("LeanAOT Settings")]
+        public LeanAOTSettings leanAOTSettings;
 
         private static Settings s_Instance;
 
