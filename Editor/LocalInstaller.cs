@@ -187,6 +187,14 @@ namespace LeanCLR
             string dstLibil2cppDir = Settings.LocalLibil2cppPath;
             BashUtil.CopyDir($"{libil2cppWithHybridclrSourceDir}", dstLibil2cppDir, true);
 
+            // copy brotli directory
+            string srcBrotliDir = $"{editorIl2cppPath}/libil2cpp/os/ClassLibraryPAL/brotli";
+            if (Directory.Exists(srcBrotliDir))
+            {
+                string dstBrotliDir = $"{dstLibil2cppDir}/os/ClassLibraryPAL/brotli";
+                BashUtil.CopyDir(srcBrotliDir, dstBrotliDir, true);
+            }
+
             string orginalIl2CppExecutable = AddExeSuffix($"{Settings.LocalIl2CppToolPath}/il2cpp");
             string il2cppproxyExecutable = AddExeSuffix($"{Settings.Il2CppProxyDir}/il2cpp");
             string backupIl2CppExecutable = AddExeSuffix($"{Settings.LocalIl2CppToolPath}/il2cpp-origin");
