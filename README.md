@@ -54,10 +54,11 @@ LeanCLR 是一个面向全平台的精练的 CLR（Common Language Runtime）实
 
 #### Lean AOT（`leanAOTSettings`）
 
-打包阶段 **Lean AOT（leanaot）** 相关选项。若未展开配置，则使用内置默认值（布局校验关闭，规则文件列表为空）。
+打包阶段 **Lean AOT（leanaot）** 相关选项。若未展开配置，则使用内置默认值（布局校验关闭，规则文件与延迟加载程序集列表为空）。
 
 - **`layoutValidation`**：是否开启类型布局等相关校验，便于在开发期尽早发现与原生布局不一致的问题；一般仅在需要排查或严格校验时开启。
 - **`ruleFiles`**：用于配置 **AOT 规则文件**路径列表（可多个）。规则文件的格式、节点与语义说明见包内文档 **[`Docs~/aot-rule-file.md`](./Docs~/aot-rule-file.md)**。每项路径可为相对 **Unity 工程根目录**（与 `Assets` 同级）的相对路径，或本机绝对路径；打包前会校验文件存在，不存在则构建失败。留空或不配置列表即不使用外部规则文件。
+- **`lazyLoadAssemblyNames`**：列表中的程序集在构建时**不会**写入 **global-metadata.dat**，运行时需你自行 **`Assembly.Load`** 等方式加载。这些程序集**仍会参与 AOT 编译**。
 
 ### 构建
 
@@ -67,7 +68,7 @@ LeanCLR 是一个面向全平台的精练的 CLR（Common Language Runtime）实
 
 | 仓库 | 说明 |
 |------|------|
-| [leanclr](https://github.com/focus-creative-games/leanclr) | LeanCLR 运行时与工具链（C++17，零外部依赖） |
+| [leanclr](https://github.com/focus-creative-games/leanclr) | LeanCLR 运行时与工具链（C++11，零外部依赖） |
 | [hybridclr](https://github.com/focus-creative-games/hybridclr)| HybridCLR是一个特性完整、零成本、高性能、低内存的Unity全平台原生c#热更新解决方案 |
 
 ## 支持与联系

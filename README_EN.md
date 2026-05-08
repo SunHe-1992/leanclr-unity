@@ -53,10 +53,11 @@ Open the project settings page via **`LeanCLR/Settings...`** (or **Edit > Projec
 
 #### Lean AOT (`leanAOTSettings`)
 
-Options for **Lean AOT (leanaot)** during packaging. If you leave the nested object unset, built-in defaults apply (layout validation off, no rule files).
+Options for **Lean AOT (leanaot)** during packaging. If you leave the nested object unset, built-in defaults apply (layout validation off, no rule files, no lazy-load assembly names).
 
 - **`layoutValidation`**: Enables layout-related checks to catch inconsistencies with native layouts earlier; turn on mainly for diagnostics or stricter validation workflows.
 - **`ruleFiles`**: Configures the list of **AOT rule file** paths (multiple entries allowed). For rule file format, elements, and semantics, see **[`Docs~/aot-rule-file.md`](./Docs~/aot-rule-file.md)** in this package. Each path may be relative to the **Unity project root** (the folder that contains `Assets`) or an absolute path on disk. Missing files fail the build at preprocess time. Leave the list empty or unset to skip external rule files.
+- **`lazyLoadAssemblyNames`**: Assemblies in this list are **not** written into **global-metadata.dat** at build time; load them yourself at runtime (for example with **`Assembly.Load`**). They **still take part in AOT compilation**.
 
 ### Build
 
@@ -66,7 +67,7 @@ No manual action is required. During release builds, this plugin automatically u
 
 | Repository | Description |
 |------|------|
-| [leanclr](https://github.com/focus-creative-games/leanclr) | LeanCLR runtime and toolchain (C++17, zero external dependencies) |
+| [leanclr](https://github.com/focus-creative-games/leanclr) | LeanCLR runtime and toolchain (C++11, zero external dependencies) |
 | [hybridclr](https://github.com/focus-creative-games/hybridclr)| HybridCLR is a feature-complete, zero-overhead, high-performance, low-memory native C# hot-update solution for Unity across all platforms |
 
 ## Support and contact
