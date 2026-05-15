@@ -6,6 +6,7 @@
 #include "class.h"
 #include "field.h"
 #include "object.h"
+#include "type.h"
 #include "metadata/aot_module.h"
 #include "utils/string_util.h"
 #include "utils/string_builder.h"
@@ -72,11 +73,6 @@ vm::RtString* Marshal::ptr_to_string_uni_len(void* ptr, int32_t len)
     return String::create_string_from_utf16chars(reinterpret_cast<const uint16_t*>(ptr), len);
 }
 
-vm::RtString* Marshal::ptr_to_string_bstr(void* ptr)
-{
-    return ptr_to_string_uni(ptr);
-}
-
 void* Marshal::string_to_hglobal_ansi(const Utf16Char* chars, int32_t len)
 {
     utils::StringBuilder utf8_str;
@@ -89,12 +85,49 @@ void* Marshal::string_to_hglobal_uni(const Utf16Char* chars, int32_t len)
     return (void*)utils::StringUtil::strdup_utf16_with_null_terminator(chars, static_cast<size_t>(len));
 }
 
-void* Marshal::buffer_to_bstr(const Utf16Char* chars, int32_t len)
+/// BStr is a Unicode character string that is a length-prefixed(4 bytes) double byte.
+vm::RtString* Marshal::ptr_to_string_bstr(void* ptr)
 {
-    return (void*)utils::StringUtil::strdup_utf16_with_null_terminator(chars, static_cast<size_t>(len));
+    if (ptr == nullptr)
+    {
+        RET_OK(nullptr);
+    }
+    const Utf16Char* bstr = reinterpret_cast<const Utf16Char*>(ptr);
+    uint32_t len = *reinterpret_cast<const uint32_t*>((const uint8_t*)bstr - sizeof(uint32_t));
+    assert((uintptr_t)bstr % 2 == 0);
+    // null terminator
+    assert(bstr[len] == 0);
+    return String::create_string_from_utf16chars(bstr, len);
+}
+
+Utf16Char* Marshal::alloc_bstr(size_t utf16char_count)
+{
+    // make sure alignment to 4 because this str is used as bstr which is a length-prefixed(4 bytes) double byte. its length should alignment to 4
+    return (Utf16Char*)alloc::GeneralAllocation::calloc(utf16char_count + 2 /* length is 4 bytes */ + 1 /* null terminator */, sizeof(Utf16Char));
+}
+
+void* Marshal::buffer_to_bstr(const Utf16Char* chars, size_t len)
+{
+    Utf16Char* bstr = alloc_bstr(len);
+    *reinterpret_cast<int32_t*>(bstr) = static_cast<int32_t>(len);
+    Utf16Char* str_start = bstr + 2;
+    std::memcpy(str_start, chars, len * sizeof(Utf16Char));
+    str_start[len] = 0;
+    // return address of the string start
+    return str_start;
 }
 
 void Marshal::free_bstr(void* ptr)
+{
+    alloc::GeneralAllocation::free((byte*)ptr - 4);
+}
+
+void* Marshal::alloc_native_array(size_t element_count, size_t element_size)
+{
+    return alloc::GeneralAllocation::calloc(element_count, element_size);
+}
+
+void Marshal::free_array(void* ptr)
 {
     alloc::GeneralAllocation::free(ptr);
 }
@@ -206,6 +239,141 @@ RtResult<metadata::RtNativeMethodPointer> Marshal::get_function_pointer_for_dele
         RET_ERR(RtErr::NotSupported);
     }
     RET_OK(cb->native_method_ptr);
+}
+
+bool read_utf8_span(utils::BinaryReader& reader, metadata::RtMarshalUtf8Span& span)
+{
+    uint32_t length = 0;
+    if (!reader.try_read_compressed_uint32(length))
+    {
+        return false;
+    }
+    span.data = reinterpret_cast<const char*>(reader.get_current_ptr());
+    if (!reader.try_advance(length))
+    {
+        return false;
+    }
+    span.length = static_cast<size_t>(length);
+    return true;
+}
+
+#define READ_UINT32_OR_SET_INVALID(variable_name, default_value) \
+    if (reader.not_empty())                                      \
+    {                                                            \
+        uint32_t value = 0;                                      \
+        if (!reader.try_read_compressed_uint32(value))           \
+        {                                                        \
+            RET_ASSERT_ERR(RtErr::BadImageFormat);               \
+        }                                                        \
+        variable_name = decltype(variable_name)(value);          \
+    }                                                            \
+    else                                                         \
+    {                                                            \
+        variable_name = default_value;                           \
+    }
+
+#define READ_UTF8_SPAN_OR_SET_INVALID(span_var) \
+    if (reader.not_empty())                                      \
+    {                                                            \
+        if (!read_utf8_span(reader, span_var)) \
+        { \
+            RET_ASSERT_ERR(RtErr::BadImageFormat); \
+        } \
+    } else { \
+        span_var.set_invalid(); \
+    }
+
+#define READ_TYPESIG_OR_SET_NULL(variable_name) \
+    if (reader.not_empty())                                      \
+    {                                                            \
+        metadata::RtMarshalUtf8Span type_name; \
+        if (!read_utf8_span(reader, type_name)) \
+        { \
+            RET_ASSERT_ERR(RtErr::BadImageFormat); \
+        } \
+        UNWRAP_OR_RET_ERR_ON_FAIL(variable_name, Type::parse_assembly_qualified_type(mod, type_name.data, type_name.length, false)); \
+    }                                                            \
+    else                                                         \
+    {                                                            \
+        variable_name = nullptr;                           \
+    }
+RtResult<bool> Marshal::get_marshal_spec(const metadata::RtFieldInfo* field, metadata::RtMarshalSpec& spec) noexcept
+{
+    if (!vm::Field::has_field_marshal(field))
+    {
+        RET_OK(false);
+    }
+
+    metadata::RtModuleDef* mod = field->parent->image;
+    const metadata::CliImage& cli_image = mod->get_cli_image();
+    uint32_t field_rid = metadata::RtToken::decode_rid(field->token);
+    uint32_t fieldmarshal_parent = metadata::RtMetadata::encode_has_field_marshal_coded_index(metadata::TableType::Field, field_rid);
+    std::optional<uint32_t> marshal_rid = cli_image.find_row_of_owner(metadata::TableType::FieldMarshal, 0, fieldmarshal_parent);
+    if (!marshal_rid)
+    {
+        // impossible for valid dll file.
+        RET_ASSERT_ERR(RtErr::BadImageFormat);
+    }
+
+    std::optional<metadata::RowFieldMarshal> marshal_row = cli_image.read_field_marshal(marshal_rid.value());
+    assert(marshal_row.has_value());
+
+    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL3(utils::BinaryReader, reader, mod->get_decoded_blob_reader(marshal_row->native_type));
+    uint8_t native_type = 0;
+    if (!reader.try_read_byte(native_type))
+        RET_ASSERT_ERR(RtErr::BadImageFormat);
+
+    assert(sizeof(metadata::RtMarshalNativeType) == sizeof(int32_t));
+    spec.native_type = static_cast<metadata::RtMarshalNativeType>(native_type);
+    switch (spec.native_type)
+    {
+    case metadata::RtMarshalNativeType::FixedSysString:
+    {
+        READ_UINT32_OR_SET_INVALID(spec.fixed_sys_string.size, metadata::RT_INVALID_PARAM_INDEX_OR_ELEMENT_COUNT);
+        break;
+    }
+    case metadata::RtMarshalNativeType::SafeArray:
+    {
+        READ_UINT32_OR_SET_INVALID(spec.safe_array.variant_type, metadata::RtMarshalVariantType::NotInitialized);
+        READ_TYPESIG_OR_SET_NULL(spec.safe_array.udt);
+        break;
+    }
+    case metadata::RtMarshalNativeType::FixedArray:
+    {
+        READ_UINT32_OR_SET_INVALID(spec.fixed_array.size, metadata::RT_INVALID_PARAM_INDEX_OR_ELEMENT_COUNT);
+        READ_UINT32_OR_SET_INVALID(spec.fixed_array.array_element_type, metadata::RtMarshalNativeType::NotInitialized);
+        break;
+    }
+    case metadata::RtMarshalNativeType::Array:
+    {
+        READ_UINT32_OR_SET_INVALID(spec.array.array_element_type, metadata::RtMarshalNativeType::NotInitialized);
+        READ_UINT32_OR_SET_INVALID(spec.array.param_index, metadata::RT_INVALID_PARAM_INDEX_OR_ELEMENT_COUNT);
+        READ_UINT32_OR_SET_INVALID(spec.array.element_count, metadata::RT_INVALID_PARAM_INDEX_OR_ELEMENT_COUNT);
+        break;
+    }
+    case metadata::RtMarshalNativeType::CustomMarshaler:
+    {
+        READ_UTF8_SPAN_OR_SET_INVALID(spec.custom_marshaler.guid);
+        READ_UTF8_SPAN_OR_SET_INVALID(spec.custom_marshaler.type_name);
+        READ_TYPESIG_OR_SET_NULL(spec.custom_marshaler.custom_marshaler_type);
+        READ_UTF8_SPAN_OR_SET_INVALID(spec.custom_marshaler.cookie);
+        break;
+    }
+    case metadata::RtMarshalNativeType::IUnknown:
+    case metadata::RtMarshalNativeType::IDispatch:
+    case metadata::RtMarshalNativeType::IntF:
+    {
+        READ_UINT32_OR_SET_INVALID(spec.interface.iid_param_index, metadata::RT_INVALID_PARAM_INDEX_OR_ELEMENT_COUNT);
+        break;
+    }
+    default:
+        break;
+    }
+    if (reader.not_empty())
+    {
+        RET_ASSERT_ERR(RtErr::BadImageFormat);
+    }
+    RET_OK(true);
 }
 
 int32_t Marshal::get_last_win32_error()

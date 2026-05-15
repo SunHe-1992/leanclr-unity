@@ -20,6 +20,11 @@
     "header": "icalls/interop.h"
   },
   {
+    "name": "Interop/Kernel32::GetTimeZoneInformation(Interop/Kernel32/TIME_ZONE_INFORMATION&)",
+    "func": "Interop::kernel32_get_time_zone_information",
+    "header": "icalls/interop.h"
+  },
+  {
     "name": "Interop/Kernel32::SetThreadErrorMode(System.UInt32,System.UInt32&)",
     "func": "Interop::kernel32_set_thread_error_mode",
     "header": "icalls/interop.h"
@@ -396,13 +401,13 @@
   },
   {
     "name": "System.Console/WindowsConsole::GetConsoleCP",
-    "func": "Interop::windows_console_get_console_cp",
-    "header": "icalls/interop.h"
+    "func": "SystemConsoleWindowsConsole::get_console_cp",
+    "header": "icalls/system_console_windowsconsole.h"
   },
   {
     "name": "System.Console/WindowsConsole::GetConsoleOutputCP",
-    "func": "Interop::windows_console_get_console_output_cp",
-    "header": "icalls/interop.h"
+    "func": "SystemConsoleWindowsConsole::get_console_output_cp",
+    "header": "icalls/system_console_windowsconsole.h"
   },
   {
     "name": "System.CurrentSystemTimeZone::GetTimeZoneData(System.Int32,System.Int64[]&,System.String[]&,System.Boolean&)",
