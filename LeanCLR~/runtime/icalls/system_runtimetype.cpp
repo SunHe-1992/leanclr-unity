@@ -86,12 +86,14 @@ RtResult<vm::RtReflectionType*> SystemRuntimeType::make_array_type(vm::RtReflect
 
     // Create array class
     metadata::RtClass* arr_class = nullptr;
-    if (rank <= 1)
+    if (rank == 0)
     {
         UNWRAP_OR_RET_ERR_ON_FAIL(arr_class, vm::ArrayClass::get_szarray_class_from_element_typesig(ele_type_sig));
     }
     else
     {
+        // when rank == 1, it is a 1-d bound array
+        // when rank > 1, it is a multi-dimensional array
         UNWRAP_OR_RET_ERR_ON_FAIL(arr_class, vm::ArrayClass::get_array_class_from_element_type(ele_type_sig, static_cast<uint8_t>(rank)));
     }
 
@@ -360,9 +362,16 @@ RtResult<utils::SafeGPtrArray<metadata::RtMethodInfo>*> SystemRuntimeType::get_c
                 continue;
         }
 
-        // Constructors are instance methods
-        if ((bind_flags & BINDING_FLAGS_INSTANCE) == 0)
-            continue;
+        if (vm::Method::is_instance(method))
+        {
+            if (!(bind_flags & BINDING_FLAGS_INSTANCE))
+                continue;
+        }
+        else
+        {
+            if (!(bind_flags & BINDING_FLAGS_STATIC))
+                continue;
+        }
 
         constructors.push_back(method);
     }
@@ -512,8 +521,12 @@ RtResultVoid SystemRuntimeType::get_interface_map_data(vm::RtReflectionRuntimeTy
     }
     metadata::RtClass* cls_method_info = vm::Class::get_corlib_types().cls_reflection_method;
 
-    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, target_array, vm::Array::new_szarray_from_ele_klass(cls_method_info, interface_vir_method_count));
-    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, method_array, vm::Array::new_szarray_from_ele_klass(cls_method_info, interface_vir_method_count));
+    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(
+        vm::RtArray*, target_array,
+        LEANCLR_NEW_SZARRAY_FROM_ELE_KLASS_INTERNAL(cls_method_info, interface_vir_method_count, "icalls::SystemRuntimeType::get_interface_map_data"));
+    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(
+        vm::RtArray*, method_array,
+        LEANCLR_NEW_SZARRAY_FROM_ELE_KLASS_INTERNAL(cls_method_info, interface_vir_method_count, "icalls::SystemRuntimeType::get_interface_map_data"));
 
     DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(const metadata::RtVirtualInvokeData*, vtable_start,
                                             vm::Method::get_interface_method_invoke_data(klass, interface_klass, 0));
@@ -695,11 +708,8 @@ RtResult<int32_t> SystemRuntimeType::get_type_code_impl_internal(vm::RtReflectio
 
 RtResult<vm::RtObject*> SystemRuntimeType::create_instance_internal(vm::RtReflectionRuntimeType* runtime_type) noexcept
 {
-    if (runtime_type == nullptr)
-        RET_OK(nullptr);
-
+    assert(runtime_type != nullptr);
     const metadata::RtTypeSig* type_sig = runtime_type->reflection_type.type_handle;
-
     DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(metadata::RtClass*, klass, vm::Class::get_class_from_typesig(type_sig));
 
     // Check if type is nullable - return null
@@ -711,7 +721,7 @@ RtResult<vm::RtObject*> SystemRuntimeType::create_instance_internal(vm::RtReflec
         RET_ERR(RtErr::MissingMethod);
 
     // Create default instance
-    return vm::Object::new_object(klass);
+    return LEANCLR_NEWOBJ_INTERNAL(klass, "icalls::SystemRuntimeType::create_instance_internal");
 }
 
 RtResult<vm::RtReflectionMethod*> SystemRuntimeType::get_declaring_method(vm::RtReflectionRuntimeType* runtime_type) noexcept
@@ -750,7 +760,9 @@ RtResult<vm::RtArray*> SystemRuntimeType::get_generic_arguments_internal(vm::RtR
     {
         // Return generic parameters
         const metadata::RtGenericContainer* gc = klass->generic_container;
-        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, new_array, vm::Array::new_szarray_from_ele_klass(result_ele_klass, gc->generic_param_count));
+        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, new_array,
+                                                LEANCLR_NEW_SZARRAY_FROM_ELE_KLASS_INTERNAL(result_ele_klass, gc->generic_param_count,
+                                                                                            "icalls::SystemRuntimeType::get_generic_arguments_internal"));
 
         for (uint32_t i = 0; i < gc->generic_param_count; ++i)
         {
@@ -768,7 +780,9 @@ RtResult<vm::RtArray*> SystemRuntimeType::get_generic_arguments_internal(vm::RtR
         // Return generic arguments from instantiated generic type
         const metadata::RtGenericInst* generic_inst = type_sig->data.generic_class->class_inst;
         uint8_t arg_count = generic_inst->generic_arg_count;
-        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, new_array, vm::Array::new_szarray_from_ele_klass(result_ele_klass, arg_count));
+        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(
+            vm::RtArray*, new_array,
+            LEANCLR_NEW_SZARRAY_FROM_ELE_KLASS_INTERNAL(result_ele_klass, arg_count, "icalls::SystemRuntimeType::get_generic_arguments_internal"));
 
         for (uint8_t i = 0; i < arg_count; ++i)
         {
@@ -781,7 +795,9 @@ RtResult<vm::RtArray*> SystemRuntimeType::get_generic_arguments_internal(vm::RtR
     else
     {
         // Return empty array if not generic
-        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, empty_array, vm::Array::new_empty_szarray_by_ele_klass(result_ele_klass));
+        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(
+            vm::RtArray*, empty_array,
+            LEANCLR_NEW_EMPTY_SZARRAY_BY_ELE_KLASS_INTERNAL(result_ele_klass, "icalls::SystemRuntimeType::get_generic_arguments_internal"));
         RET_OK(empty_array);
     }
 }
@@ -881,7 +897,9 @@ RtResult<vm::RtArray*> SystemRuntimeType::get_interfaces(vm::RtReflectionRuntime
     RET_ERR_ON_FAIL(vm::Class::initialize_interfaces(klass));
 
     const auto cls_systemtype = vm::Class::get_corlib_types().cls_systemtype;
-    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(vm::RtArray*, interface_array, vm::Array::new_szarray_from_ele_klass(cls_systemtype, klass->interface_count));
+    DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(
+        vm::RtArray*, interface_array,
+        LEANCLR_NEW_SZARRAY_FROM_ELE_KLASS_INTERNAL(cls_systemtype, klass->interface_count, "icalls::SystemRuntimeType::get_interfaces"));
 
     // Fill array with interface type references
     for (uint32_t i = 0; i < klass->interface_count; ++i)

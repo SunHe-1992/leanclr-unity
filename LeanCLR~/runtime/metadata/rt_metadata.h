@@ -281,7 +281,6 @@ enum class RtClassInitPart : uint32_t
     InterfaceTypes = 0x40,
     NestedClasses = 0x80,
     All = 0x10000,
-    RuntimeClassInit = 0x20000,
 };
 
 // Class family enumeration
@@ -698,6 +697,8 @@ struct RtClass
     const RtInterfaceOffset* interface_vtable_offsets;
     uint8_t* static_fields_data;
     void* unity_user_data;
+    uintptr_t* gc_bitmap;
+    uint16_t gc_bitmap_word_count;
     EncodedTokenId token;
     uint32_t instance_size_without_header;
     uint32_t static_size;
@@ -714,6 +715,7 @@ struct RtClass
     uint16_t vtable_count;
     uint8_t hierarchy_depth;
     uint8_t alignment;
+    bool has_init_cctor;
 };
 
 struct RtCustomAttributeRidRange

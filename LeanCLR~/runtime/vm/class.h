@@ -269,12 +269,12 @@ class Class
 
     static bool is_cctor_not_finished(const metadata::RtClass* klass)
     {
-        return (klass->init_flags & (uint32_t)metadata::RtClassInitPart::RuntimeClassInit) == 0;
+        return !klass->has_init_cctor;
     }
 
     static void set_cctor_finished(metadata::RtClass* klass)
     {
-        klass->init_flags |= (uint32_t)metadata::RtClassInitPart::RuntimeClassInit;
+        klass->has_init_cctor = true;
     }
 
     static const metadata::RtTypeSig* get_by_val_type_sig(const metadata::RtClass* klass)
@@ -452,15 +452,20 @@ class Class
 
     static size_t get_gc_bitmap_size(const metadata::RtClass* klass)
     {
-        (void)klass;
-        return 0;
+        return klass->gc_bitmap_word_count;
     }
 
     static void get_gc_bitmap(const metadata::RtClass* klass, size_t* bitmaps, size_t& bitmaps_size)
     {
-        (void)klass;
-        (void)bitmaps;
-        bitmaps_size = 0;
+        bitmaps_size = klass->gc_bitmap_word_count;
+        if (bitmaps == nullptr || bitmaps_size == 0 || klass->gc_bitmap == nullptr)
+        {
+            return;
+        }
+        for (size_t i = 0; i < bitmaps_size; ++i)
+        {
+            bitmaps[i] = static_cast<size_t>(klass->gc_bitmap[i]);
+        }
     }
 
     static void walk_ptr_classes(metadata::ClassWalkCallback callback, void* userData);

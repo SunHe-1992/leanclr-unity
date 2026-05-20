@@ -24,6 +24,7 @@
 #include "alloc/general_allocation.h"
 #include "alloc/metadata_allocation.h"
 #include "gc/garbage_collector.h"
+#include "gc_roots_register.h"
 #include "interp/machine_state.h"
 #include "utils/rt_vector.h"
 
@@ -312,7 +313,7 @@ static RtResult<RtObject*> convert_return_value(const metadata::RtTypeSig* retur
     DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(metadata::RtClass*, return_klass, Class::get_class_from_typesig(return_type));
     if (Class::is_value_type(return_klass))
     {
-        return Object::box_object(return_klass, ret_buffer);
+        return LEANCLR_BOX_OBJECT_INTERNAL(return_klass, ret_buffer, "Runtime::convert_return_value");
     }
     else
     {
@@ -321,7 +322,7 @@ static RtResult<RtObject*> convert_return_value(const metadata::RtTypeSig* retur
             const void* address = ret_buffer->ptr;
             if (Class::is_value_type(return_klass))
             {
-                return Object::box_object(return_klass, address);
+                return LEANCLR_BOX_OBJECT_INTERNAL(return_klass, address, "Runtime::convert_return_value");
             }
             else
             {
@@ -394,6 +395,8 @@ RtResultVoid Runtime::initialize()
     const char** argv;
     Settings::get_command_line_arguments(argc, argv);
     RET_ERR_ON_FAIL(Environment::init_cmdline_args(argv, argc));
+
+    register_all_gc_roots();
 
     metadata::RtModuleDef* corlib_mod = Assembly::get_corlib()->mod;
     auto corlib_aot_module_data = corlib_mod->get_aot_module_data();
@@ -485,7 +488,7 @@ RtResult<RtObject*> Runtime::invoke_object_arguments_without_run_cctor(const met
     if (return_instance)
     {
         assert(!Class::is_nullable_type(method->parent));
-        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(RtObject*, new_obj, Object::new_object(method->parent));
+        DECLARING_AND_UNWRAP_OR_RET_ERR_ON_FAIL(RtObject*, new_obj, LEANCLR_NEWOBJ_INTERNAL(method->parent, "Runtime::invoke_object_arguments_without_run_cctor"));
         actual_obj = new_obj;
     }
 
