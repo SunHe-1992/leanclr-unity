@@ -123,23 +123,7 @@ namespace LeanCLR
             }
         }
 
-        public static string Il2CppProxyDir
-        {
-            get
-            {
-#if UNITY_EDITOR_WIN
-                string platformSuffix = "win";
-#elif UNITY_EDITOR_OSX
-                string platformSuffix = "osx";
-#elif UNITY_EDITOR_LINUX
-                string platformSuffix = "linux";
-#else
-                string platformSuffix = "unknown";
-#endif
-                string archSuffix = RuntimeInformation.ProcessArchitecture == Architecture.Arm || RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm" : "x64";
-                return $"{LeanCLRDataPathInPackage}/il2cppproxy/{platformSuffix}-{archSuffix}";
-            }
-        }
+        public static string Il2CppProxyDir => $"{LeanCLRDataPathInPackage}/il2cppproxy/";
 
         public static string LocalLeanAotDir => $"{LocalIl2CppToolPath}/leanaot";
 

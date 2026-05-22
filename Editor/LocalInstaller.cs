@@ -157,6 +157,44 @@ namespace LeanCLR
 #endif
         }
 
+        public static string PlatformDirName
+        {
+            get
+            {
+#if UNITY_EDITOR_WIN
+                string platformSuffix = "win";
+#elif UNITY_EDITOR_OSX
+                string platformSuffix = "osx";
+#elif UNITY_EDITOR_LINUX
+                string platformSuffix = "linux";
+#else
+                string platformSuffix = "unknown";
+#endif
+                string archSuffix;
+                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
+                {
+                    archSuffix = "arm";
+                }
+                else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                {
+                    archSuffix = "arm64";
+                }
+                else if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                {
+                    archSuffix = "x64";
+                }
+                else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+                {
+                    archSuffix = "x86";
+                }
+                else
+                {
+                    archSuffix = "unknownarch";
+                }
+                return $"{platformSuffix}-{archSuffix}";
+            }
+        }
+
         private void RunInitLocalIl2CppData(string editorIl2cppPath, string libil2cppWithHybridclrSourceDir, UnityVersion version)
         {
             string workDir = Settings.InstallRootDir;
@@ -196,7 +234,7 @@ namespace LeanCLR
             }
 
             string orginalIl2CppExecutable = AddExeSuffix($"{Settings.LocalIl2CppToolPath}/il2cpp");
-            string il2cppproxyExecutable = AddExeSuffix($"{Settings.Il2CppProxyDir}/il2cpp");
+            string il2cppproxyExecutable = AddExeSuffix($"{Settings.Il2CppProxyDir}/{PlatformDirName}/il2cpp");
             string backupIl2CppExecutable = AddExeSuffix($"{Settings.LocalIl2CppToolPath}/il2cpp-origin");
             // il2cpp -> il2cpp-origin
             // il2cppproxy -> il2cpp
@@ -207,6 +245,10 @@ namespace LeanCLR
             string srcLeanAotDir = Settings.LeanAOTPathInPackage;
             string dstLeanAotDir = Settings.LocalLeanAotDir;
             BashUtil.CopyDir(srcLeanAotDir, dstLeanAotDir, true);
+            string srcLeanaotExecutable = AddExeSuffix($"{srcLeanAotDir}/{PlatformDirName}/leanaot");
+            string dstLeanaotExecutable = AddExeSuffix($"{dstLeanAotDir}/leanaot");
+            File.Copy(srcLeanaotExecutable, dstLeanaotExecutable, true);
+            Debug.Log($"copy leanaot {srcLeanaotExecutable} -> {dstLeanaotExecutable}");
 
             // clean Il2cppBuildCache
             BashUtil.RemoveDir($"Library/Il2cppBuildCache", true);
