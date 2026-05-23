@@ -19,7 +19,7 @@ LeanCLR 是一个面向全平台的精练的 CLR（Common Language Runtime）实
 
 ### 支持的Unity版本和平台
 
-- 暂时支持Windows平台Unity Editor，后续版本会支持MacOS和linux
+- 支持Windows和MacOS平台Unity Editor
 - 支持Unity 2021 - 6000 所有版本（含LTS和非LTS版本）
 - 支持团结引擎所有版本
 - 支持WebGL和MiniGame平台
