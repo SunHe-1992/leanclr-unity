@@ -16,6 +16,8 @@ class Object
     // Create new instance of a class
     // please don't use this method directly, use LEANCLR_NEWOBJ instead
     static RtResult<RtObject*> __new_object(const metadata::RtClass* klass LEANCLR_GC_DECLARE_CALL_SITE_PARAM);
+    
+    static RtResult<RtObject*> internal_create_instance(const metadata::RtTypeSig* type_sig LEANCLR_GC_DECLARE_CALL_SITE_PARAM);
 
     // Box a value type into an object
     static RtResult<RtObject*> __box_object(const metadata::RtClass* klass, const void* value LEANCLR_GC_DECLARE_CALL_SITE_PARAM);
@@ -50,6 +52,8 @@ class Object
       ::leanclr::vm::Object::__box_object(klass, value, call_site)
 #define LEANCLR_CLONE(obj, call_site)                                                              \
       ::leanclr::vm::Object::__clone(obj, call_site)
+#define LEANCLR_CREATE_INSTANCE(type_sig, call_site)                                                              \
+      ::leanclr::vm::Object::internal_create_instance(type_sig, call_site)
 #else
 #define LEANCLR_NEWOBJ(klass, call_site)                                                              \
       ::leanclr::vm::Object::__new_object(klass)
@@ -57,6 +61,8 @@ class Object
       ::leanclr::vm::Object::__box_object(klass, value)
 #define LEANCLR_CLONE(obj, call_site)                                                              \
       ::leanclr::vm::Object::__clone(obj)
+#define LEANCLR_CREATE_INSTANCE(type_sig, call_site)                                                              \
+      ::leanclr::vm::Object::internal_create_instance(type_sig)
 #endif
 
 // Runtime-native allocation with optional GC allocation site (see gc/gc_newobj_macros.h).
@@ -66,5 +72,7 @@ class Object
   LEANCLR_BOX_OBJECT(klass, value, ::leanclr::gc::GcAllocSite::make_internal(__FILE__, __LINE__, native_runtime_method))
 #define LEANCLR_CLONE_INTERNAL(obj, native_runtime_method)                                                            \
   LEANCLR_CLONE(obj, ::leanclr::gc::GcAllocSite::make_internal(__FILE__, __LINE__, native_runtime_method))
+#define LEANCLR_CREATE_INSTANCE_INTERNAL(type_sig, native_runtime_method)                                                            \
+  LEANCLR_CREATE_INSTANCE(type_sig, ::leanclr::gc::GcAllocSite::make_internal(__FILE__, __LINE__, native_runtime_method))
 } // namespace vm
 } // namespace leanclr
