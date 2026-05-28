@@ -37,7 +37,7 @@ namespace LeanCLR
         public string[] ruleFiles;
 
         [Tooltip("Assemblies excluded from global-metadata.dat; load manually at runtime (e.g. Assembly.Load). They still participate in AOT compilation.")]
-        public string[] lazyLoadAssemblyNames;
+        public string[] lazyLoadedAssemblyNames;
     }
 
     public enum GCMode
