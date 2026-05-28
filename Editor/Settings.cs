@@ -48,16 +48,26 @@ namespace LeanCLR
         Zero = 1,
     }
 
+    [Serializable]
+    public class GCSettings
+    {
+        [Tooltip("GC Mode")]
+        public GCMode mode;
+
+        [Tooltip("Enable GC debug to diagnostics GC issue, don't enable it in release build!")]
+        public bool enableGCDebug;
+    }
+
     public class Settings : ScriptableObject
     {
         [Tooltip("Enable LeanCLR")]
         public bool enable = true;
 
-        [Tooltip("GC Mode")]
-        public GCMode gcMode = GCMode.MarkSweep;
-
         [Tooltip("LeanAOT Settings")]
         public LeanAOTSettings leanAOTSettings;
+
+        [Tooltip("GC Settings")]
+        public GCSettings gcSettings;
 
         private static Settings s_Instance;
 
