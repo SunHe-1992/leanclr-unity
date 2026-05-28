@@ -74,7 +74,7 @@ namespace LeanCLR.BuildProcessors
         }
 
         /// <summary>
-        /// Removes LeanCLR-owned UNITY_VERSION / UNITY_TUANJIE_ENGINE preprocessor flags
+        /// Removes LeanCLR-owned UNITY_VERSION / UNITY_TUANJIE_ENGINE / GC mode preprocessor flags
         /// (-D... and legacy /D...) from any quoted --compiler-flags="..." segments before re-applying.
         /// </summary>
         internal static string StripUnityVersionCompilerDefines(string additionalIl2CppArgs)
@@ -115,6 +115,10 @@ namespace LeanCLR.BuildProcessors
             s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", opt);
             s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*UNITY_VERSION\s*=\s*\d+", " ", opt);
             s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*LEANCLR_GC_ZERO_GC\s*=\s*\d+", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*LEANCLR_GC_MARK_SWEEP\s*=\s*\d+", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*LEANCLR_GC_ZERO_GC\s*=\s*\d+", " ", opt);
+            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*LEANCLR_GC_MARK_SWEEP\s*=\s*\d+", " ", opt);
             return s.Trim();
         }
 
@@ -139,6 +143,18 @@ namespace LeanCLR.BuildProcessors
             if (ver.isTuanjieEngine)
             {
                 sb.Append(" -DUNITY_TUANJIE_ENGINE=1");
+            }
+
+            switch (Settings.Instance.gcMode)
+            {
+                case GCMode.Zero:
+                    sb.Append(" -DLEANCLR_GC_ZERO_GC=1");
+                    break;
+                case GCMode.MarkSweep:
+                    sb.Append(" -DLEANCLR_GC_MARK_SWEEP=1");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(Settings.Instance.gcMode), Settings.Instance.gcMode, null);
             }
 
             return sb.ToString();
