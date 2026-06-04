@@ -3,6 +3,7 @@
 
 #include "utils/string_builder.h"
 #include "utils/string_util.h"
+#include "vm/class.h"
 #include "vm/rt_string.h"
 
 namespace leanclr
