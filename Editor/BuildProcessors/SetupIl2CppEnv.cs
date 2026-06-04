@@ -63,9 +63,10 @@ namespace LeanCLR.BuildProcessors
             }
 
             var sb = new StringBuilder();
+            sb.Append(" --leanaot-may-throw-exception-in-icall");
             if (aot.layoutValidation)
             {
-                sb.Append("--leanaot-enable-layout-validation");
+                sb.Append(" --leanaot-enable-layout-validation");
             }
 
             if (aot.ruleFiles != null)
