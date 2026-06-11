@@ -27,7 +27,6 @@ For a complete background, comparisons with CoreCLR / Mono / IL2CPP, roadmap, an
 
 ### Limitations
 
-- **GC is under development and is expected to be officially supported in June 2026.**
 - Single-thread execution only.
 
 ### Sample project
@@ -63,14 +62,8 @@ No manual action is required. During release builds, this plugin automatically u
 
 During the build, leanclr4unity invokes leanaot to copy all AOT DLLs to `Library/LeanCLR/ManagedStripped/{buildTarget}`. These AOT DLLs can be used for lazy loading.
 
-### Lazy Loaded Assembly Limitations
+### Notes
 
-:::tip
-The following limitations are temporary; we expect to resolve them soon.
-
-:::
-
-- **Do not** attach scripts from lazy-load assemblies to scenes, prefabs, asset bundles, or other assets; otherwise you will get Missing Script errors. For the underlying reason, see [HybridCLR — MonoBehaviour support](https://www.hybridclr.cn/docs/basic/monobehaviour).
 - If a lazy-loaded assembly also has some code compiled into AOT (i.e., AOT is not fully disabled for that assembly in aot.xml), loading the lazy-loaded assembly at runtime requires it to match the **trimmed AOT DLL produced during the build** exactly. You cannot use assemblies from Compile Dll directly; you must use the trimmed AOT DLL from the build output. During the build, leanclr4unity invokes leanaot to copy all AOT DLLs to `Library/LeanCLR/ManagedStripped/{buildTarget}`; use the DLLs from that directory for lazy loading.
 
 ## Related repositories
