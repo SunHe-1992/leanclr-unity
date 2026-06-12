@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -54,46 +55,37 @@ namespace LeanCLR.BuildProcessors
                 throw new Exception("Please install LeanCLR first.");
             }
 
-            bool enable = Settings.EnableForCurrentBuildTarget;
             string current = PlayerSettings.GetAdditionalIl2CppArgs();
-            string stripped = StripUnityVersionCompilerDefines(current);
-            stripped = CollapseDuplicateWhitespace(stripped);
+            string stripped = StripLeanClrCompilerDefines(current);
+            PlayerSettings.SetAdditionalIl2CppArgs(stripped.Trim());
 
-            if (!enable)
+            if (!Settings.EnableForCurrentBuildTarget)
             {
-                PlayerSettings.SetAdditionalIl2CppArgs(stripped.Trim());
                 return;
             }
 
             var ver = installerController.CurVersion;
-            
             string[] lazyLoadedAssemblyNames = Settings.Instance.leanAOTSettings?.lazyLoadedAssemblyNames;
             string inner = BuildCompilerDefineFlags(ver, lazyLoadedAssemblyNames);
             string block = $"--compiler-flags=\"{inner}\"";
-            string merged = string.IsNullOrWhiteSpace(stripped) ? block : $"{stripped} {block}";
+            string merged = string.IsNullOrWhiteSpace(stripped) ? block : $"{stripped.Trim()} {block}";
             PlayerSettings.SetAdditionalIl2CppArgs(merged.Trim());
             Debug.Log($"[LeanCLR] IL2CPP compiler defines: {inner} (target={platform})");
         }
 
-        /// <summary>
-        /// Removes LeanCLR-owned UNITY_VERSION / UNITY_TUANJIE_ENGINE / GC / placeholder-assembly
-        /// preprocessor flags (-D... and legacy /D...) from any quoted --compiler-flags="..." segments
-        /// before re-applying.
-        /// </summary>
-        internal static string StripUnityVersionCompilerDefines(string additionalIl2CppArgs)
+        internal static string StripLeanClrCompilerDefines(string additionalIl2CppArgs)
         {
             if (string.IsNullOrEmpty(additionalIl2CppArgs))
             {
                 return string.Empty;
             }
 
-            return Regex.Replace(
+            string result = Regex.Replace(
                 additionalIl2CppArgs,
                 @"--compiler-flags=""([^""]*)""",
                 m =>
                 {
-                    string inner = m.Groups[1].Value;
-                    string cleaned = StripUnityDefineTokens(inner);
+                    string cleaned = StripLeanClrDefineTokens(m.Groups[1].Value);
                     if (string.IsNullOrWhiteSpace(cleaned))
                     {
                         return string.Empty;
@@ -101,9 +93,11 @@ namespace LeanCLR.BuildProcessors
 
                     return $"--compiler-flags=\"{cleaned.Trim()}\"";
                 });
+
+            return CollapseDuplicateWhitespace(result);
         }
 
-        static string StripUnityDefineTokens(string inner)
+        static string StripLeanClrDefineTokens(string inner)
         {
             if (string.IsNullOrWhiteSpace(inner))
             {
@@ -111,21 +105,12 @@ namespace LeanCLR.BuildProcessors
             }
 
             string s = inner;
-            const RegexOptions opt = RegexOptions.IgnoreCase;
-            // Require start-of-string or whitespace before -D so we strip the first token
-            // (e.g. inner is exactly "-DUNITY_VERSION=60000400", not only after a space).
-            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*UNITY_VERSION\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*UNITY_VERSION\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*UNITY_TUANJIE_ENGINE(\s*=\s*\d+)?", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*LEANCLR_GC_ZERO_GC\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*LEANCLR_GC_MARK_SWEEP\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*LEANCLR_GC_ZERO_GC\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*LEANCLR_GC_MARK_SWEEP\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*LEANCLR_GC_DEBUG\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*LEANCLR_GC_DEBUG\s*=\s*\d+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)-D\s*LEANCLR_PLACEHOLDER_ASSEMBLY_NAMES\s*=\S+", " ", opt);
-            s = Regex.Replace(s, @"(?:^|[\s]+)/D\s*LEANCLR_PLACEHOLDER_ASSEMBLY_NAMES\s*=\S+", " ", opt);
+            s = Regex.Replace(s, @"-DUNITY_VERSION=\d+", " ");
+            s = Regex.Replace(s, @"-DUNITY_TUANJIE_ENGINE=\d+", " ");
+            s = Regex.Replace(s, @"-DLEANCLR_GC_ZERO_GC=\d+", " ");
+            s = Regex.Replace(s, @"-DLEANCLR_GC_MARK_SWEEP=\d+", " ");
+            s = Regex.Replace(s, @"-DLEANCLR_GC_DEBUG=\d+", " ");
+            s = Regex.Replace(s, @"-DLEANCLR_PLACEHOLDER_ASSEMBLY_NAMES=\S+", " ");
             return s.Trim();
         }
 
@@ -172,7 +157,7 @@ namespace LeanCLR.BuildProcessors
 
             if (lazyLoadedAssemblyNames != null && lazyLoadedAssemblyNames.Length > 0)
             {
-                sb.Append(" -DLEANCLR_PLACEHOLDER_ASSEMBLY_NAMES=").Append(string.Join(",", lazyLoadedAssemblyNames));
+                sb.Append(" -DLEANCLR_PLACEHOLDER_ASSEMBLY_NAMES=").Append(string.Join(",", lazyLoadedAssemblyNames.Select(x => x.Trim())));
             }
             
             return sb.ToString();
