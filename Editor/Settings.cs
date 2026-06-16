@@ -136,6 +136,8 @@ namespace LeanCLR
 
         public static string GetManagedStrippedDuplicatePath(BuildTarget buildTarget) => $"{InstallRootDir}/ManagedStripped/{buildTarget}";
 
+        public static string GetCompileDllOutputPath(BuildTarget buildTarget) => $"{InstallRootDir}/CompileDlls/{buildTarget}";
+
         public static string LocalIl2CppPath => $"{LocalIl2CppDataPath}/il2cpp";
 
         public static string LocalLibil2cppPath => $"{LocalIl2CppPath}/libil2cpp";
