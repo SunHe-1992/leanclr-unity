@@ -63,13 +63,8 @@ class Vector
         push_range(begin, static_cast<size_t>(end - begin));
     }
 
-    Vector(const Vector& other) : allocator_(other.allocator_), data_(nullptr), size_(0), capacity_(0)
+    Vector(const Vector& other) : Vector(other.begin(), other.end(), other.allocator_)
     {
-        reserve(other.size_);
-        for (size_t i = 0; i < other.size_; ++i)
-        {
-            push_back(other.data_[i]);
-        }
     }
 
     Vector& operator=(const Vector& other)
@@ -156,7 +151,7 @@ class Vector
         {
             return;
         }
-        size_t index = it - begin();
+        size_t index = static_cast<size_t>(it - begin());
         data_[index].~T();
         for (size_t i = index; i < size_ - 1; ++i)
         {
