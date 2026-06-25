@@ -72,7 +72,7 @@ namespace LeanCLR.BuildProcessors
             {
                 sb.Append(" --leanaot-enable-pgo-profile=1");
             }
-            sb.Append($" --leanaot-managed-stripped-duplicate-path=\"{Settings.GetManagedStrippedDuplicatePath(target)}\"");
+            sb.Append($" \"--leanaot-managed-stripped-duplicate-path={Settings.GetManagedStrippedDuplicatePath(target)}\"");
 
             AppendExistingFileArguments(sb, aot.ruleFiles, projectRoot, "--leanaot-aot-rule-file", "AOT rule file");
             AppendExistingFileArguments(sb, aot.pgoRuleFiles, projectRoot, "--leanaot-pgo-rule-file", "PGO rule file");
@@ -143,9 +143,10 @@ namespace LeanCLR.BuildProcessors
 
         private static void AppendQuotedFileArgument(StringBuilder sb, string argument, string absolutePath)
         {
-            AppendArgument(sb, argument);
             sb.Append(' ');
             sb.Append('"');
+            sb.Append(argument);
+            sb.Append('=');
             sb.Append(absolutePath.Replace("\"", "\\\""));
             sb.Append('"');
         }
